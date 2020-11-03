@@ -2,29 +2,33 @@
     note how we wrap our api fetch in this function that allows us to do some
     additional error / message handling for all API calls...
 */
-async function apiCall( url, method='get', data={} ){
+async function fetchJSON( url, method='get', data={} ){
     method = method.toLowerCase()
-    let settings = { method }
-
-    // for formData we must NOT set content-type, let system do it
-    const isFormData = (typeof data)==='string'
-    if( !isFormData ) {
-        settings.headers = { 'Content-Type': 'application/json' }
+    let settings = {
+        headers: {
+            'Session': localStorage.session ? localStorage.session : '',
+            'Content-Type': 'application/json' },
+        method
     }
 
     // only attach the body for put/post
     if( method === 'post' || method === 'put' ) {
+        const isFormData = (typeof data)==='string'
         if( isFormData ){
+            // for 'new FormData' generation we must NOT set content-type, let system do it
+            delete settings.headers['Content-Type']
             //* gather form data (esp. if attached media)
-            //! each entry to be attached must have a valid **name** attribute
-            settings.body = new FormData( document.querySelector(`${data}`) )
+            //! NOTE: each entry to be attached must have a valid **name** attribute
+            settings.body = new FormData( document.querySelector(data) )
         } else {
             settings.body = JSON.stringify( data )
         }
     }
 
-    const result = await fetch( url,settings ).then( res=>res.json() )
+    return fetch( url,settings ).then( res=>res.json() )
+}
 
+function showAPIMessage( result ){
     /* put the api result message onto the screen as a message if it exists */
     if( result.status && result.message ){
         const apiResultEl = document.querySelector('#apiMessage')
@@ -60,7 +64,7 @@ function toggleMediaUpload( selectType='imageFile' ){
 
 
 async function mediaList( id ){
-    const getRequest = await apiCall( '/api/media' )
+    const getRequest = await fetchJSON( '/api/media' )
     console.log( '[mediaList] ', getRequest )
 
     if( getRequest.status ){
@@ -82,8 +86,9 @@ async function uploadMedia( event ){
 
     //* because we are using the built-in browser form-builder, we need valid
     //! **name** attributes - for ease we give same values as the id's
-    const uploadResponse = await apiCall( '/api/media', 'post', '#mediaForm' )
+    const uploadResponse = await fetchJSON( '/api/media', 'post', '#mediaForm' )
     console.log( '[uploadResponse] ', uploadResponse )
+    showAPIMessage( uploadResponse )
 
     if( uploadResponse.status ){
         // clear the data

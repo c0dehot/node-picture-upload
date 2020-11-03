@@ -1,10 +1,10 @@
 // hard-coded settings (should be in the .env)
-const UPLOAD_PATH = process.env.UPLOAD_PATH || 'public/uploads/'
-
+const HTML_PATH = process.env.HTML_PATH || 'public/'
+const UPLOAD_PATH = process.env.UPLOAD_PATH || 'uploads/'
 const orm = require('./orm')
-const uploadResizer = require( './uploadResizer' )
-const upload = require('multer')({ dest: UPLOAD_PATH })
-const publicPath = '../'
+const upload = require('multer')({ dest: HTML_PATH+UPLOAD_PATH })
+// first entry (../) is relative location of the image to current path
+const imageTool = require( './imageTool' )('../',UPLOAD_PATH)
 
 function router( app ){
 // media upload looks for a picture file called 'imageFile'
@@ -15,7 +15,7 @@ function router( app ){
         // if they uploaded a file, let's add it to the thumbData
         if( req.file ){
             const [ resizeWidth, resizeHeight ] = mediaData.imageSize.split('x')
-            const imageUrl = await uploadResizer(publicPath+req.file.path, req.file.originalname, resizeWidth, resizeHeight);
+            const imageUrl = await imageTool.resize( req.file, resizeWidth, resizeHeight);
             // assign in the thumbData so can use as normal
             mediaData.imageUrl = imageUrl
             mediaData.name = req.file.originalname
